@@ -10,7 +10,12 @@ router.use(bodyParser.json());
 router.get('/', async (req, res) => {
   try {
     const users = await User.findAll();
-    res.json(users);
+    const hideThePass = users.map(user => {
+      const userWithoutPassword = Object.assign({}, user.toJSON());
+      delete userWithoutPassword.pass;
+      return userWithoutPassword;
+    });
+    res.json(hideThePass);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal mengambil data user' });
@@ -28,27 +33,9 @@ router.post('/login', async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Password salah' });
     }
-
-    res.json({ message: 'Login berhasil', user });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Gagal login' });
-  }
-});
-router.post('/login', async (req, res) => {
-  const { username, pass } = req.body;
-  try {
-    const user = await User.findOne({ where: { username } });
-    if (!user) {
-      return res.status(404).json({ message: 'Username tidak ditemukan' });
-    }
-
-    const isPasswordValid = await bcrypt.compare(pass, user.pass);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Password salah' });
-    }
-
-    res.json({ message: 'Login berhasil', user });
+    const userWithoutPassword = Object.assign({}, user.toJSON());
+    delete userWithoutPassword.pass
+    res.json({ message: 'Login Berhasil', user: userWithoutPassword });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal login' });
@@ -66,51 +53,66 @@ router.post('/register', async (req, res) => {
     res.status(500).json({ message: 'Gagal mendaftar akun' });
   }
 });
-router.put('/:id/password', async (req, res) => {
-  const { id } = req.params;
-  const { pass } = req.body;
-  const hashedPass = await bcrypt.hash(pass, 10);
+router.put('/:UUID/passwordChange', async (req, res) => {
+  const { UUID } = req.params;
+  const { passLama, passBaru } = req.body;
+  const hashedPass = await bcrypt.hash(passBaru, 10);
   try {
-    await User.update({ pass: hashedPass }, { where: { id } });
+    const user = await User.findOne({ where: { UUID } });
+    if (!user) {
+      return res.status(404).json({ message: 'Username tidak ditemukan' });
+    }
+    const isPasswordValid = await bcrypt.compare(passLama, user.pass);
+    if (!isPasswordValid) {
+      return res.status(401).json({ message: 'Password lama salah, Harap cek kembali' });
+    }
+
+    await User.update({ pass: hashedPass }, { where: { UUID } });
     res.json({ message: 'Password berhasil diubah' });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal mengubah password' });
   }
 });
-router.put('/:id/nama_lengkap', async (req, res) => {
-    const { id } = req.params;
+router.put('/:UUID/nama_lengkap', async (req, res) => {
+    const { UUID } = req.params;
     const { nama_lengkap } = req.body;
-  
     try {
-      await User.update({ nama_lengkap }, { where: { id } });
+      await User.update({ nama_lengkap }, { where: { UUID } });
       res.json({ message: 'Nama lengkap berhasil diubah' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Gagal mengubah nama lengkap' });
     }
   });
-  router.put('/:id/username', async (req, res) => {
-    const { id } = req.params;
+  router.put('/:UUID/gantiUsername', async (req, res) => {
+    const { UUID } = req.params;
     const { username } = req.body;
   
     try {
+      console.log(req.body.username);
+      const userCharLength = req.body.username.length;
+      console.log(userCharLength)
       const existingUser = await User.findOne({ where: { username } });
-      if (existingUser && existingUser.id !== id) {
+      if (existingUser && existingUser.UUID !== UUID) {
         return res.status(400).json({ message: 'Username sudah digunakan' });
       }
-      await User.update({ username }, { where: { id } });
+      if (userCharLength <=5){
+        return res.status(400).json({ message: 'Harap mengisi username anda minimal 6 karakter' });
+      }
+      
+      await User.update({ username }, { where: { UUID } });
       res.json({ message: 'Username berhasil diubah' });
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Gagal mengubah username' });
     }
   });
-router.delete('/:id', async (req, res) => {
-    const { id } = req.params;
+router.delete('/:UUID', async (req, res) => {
+    const { UUID } = req.params;
   
     try {
-      await User.destroy({ where: { id } });
+      await User.destroy({ where: { UUID } });
       res.json({ message: 'Akun berhasil dihapus' });
     } catch (error) {
       console.error(error);
