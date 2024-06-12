@@ -1,0 +1,11 @@
+# DB_HOST='' #bisa localhost atau sesuaikan dengan ip lokal atau publik
+# DB_PORT= #value standard nya 3306
+# DB_USERNAME='' #username di db
+# DB_PASSWORD='' #pass db
+# DB_DATABASE='' #nama databasenya
+
+DB_HOST=''
+DB_PORT=
+DB_USERNAME=''
+DB_PASSWORD=''
+DB_DATABASE=''
