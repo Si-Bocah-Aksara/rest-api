@@ -1,27 +1,25 @@
 //Module and dependency import here plzz
 const express = require('express')
 const app = express();
-
 const sequelize = require('./db');
 const pesan = require('./pesan')
 const bodyParser = require('body-parser');
-
 //Server Initialize
-const server = app.listen(4000, () => {
-    console.log(pesan.info("Now i am online at")+pesan.info('\u001b[1mhttp://localhost:'+server.address().port))
-    })
+const server = app.listen(5000, () => {
+  console.log(pesan.info("Now i am online at")+pesan.info('\u001b[1m103.127.135.73:'+server.address().port))
+})
 //Sequalize initalize
 sequelize.authenticate()
     .then(() => {
-      console.log(pesan.sukses("Yahoo! We\'re connected to the database"));
-    })
-    .catch(err => {
-      console.error(err, pesan.gagal("\nOw, maybe double check your service or the config, we got some error here"));
-    });
-  
-
-//Lets Roll the API
-app.get("/",(req,res)=>{
+        console.log(pesan.sukses("Yahoo! We\'re connected to the database"));
+      })
+      .catch(err => {
+          console.error(err, pesan.gagal("\nOw, maybe double check your service or the config, we got some error here"));
+        });
+    
+    
+    //Lets Roll the API
+    app.get("/",(req,res)=>{
       res.status(200).json({message:"Hey i'm online now"})
       console.log(pesan.info('We are on /root'))
   })
