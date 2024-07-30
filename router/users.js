@@ -4,10 +4,33 @@ const User = require('../models/users.model');
 const bcrypt = require('bcryptjs');
 const bodyParser = require('body-parser');//input ke variable biar bisa jadi bentuk json
 const uuid = require('uuid');//bikin UUID
+const jwt = require('jsonwebtoken');
 
 router.use(bodyParser.json());
+//token generator
+const JWT_SECRET = process.env.JWT_SECRET;
+//Cek admin
+const isAdmin = (req, res, next) => {
+  if (!req.user || !req.user.isAdmin) {
+    return res.status(403).json({ message: 'Akses dilarang' });
+  }
+  next();
+};
 
-/**router.get('/', async (req, res) => {
+// Middleware untuk verifikasi token
+const verifyToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  if (token == null) return res.sendStatus(401);   
+ // Tidak ter autorisasi, alhasil tidak dapat token
+  jwt.verify(token,JWT_SECRET, (err, decoded) => {
+    if (err) return res.sendStatus(403); // forbidden
+    req.user = decoded;
+    next();
+  });
+};
+
+router.get('/', verifyToken, isAdmin, async (req, res) => {
   try {
     const users = await User.findAll();
     const hideThePass = users.map(user => {
@@ -20,7 +43,7 @@ router.use(bodyParser.json());
     console.error(error);
     res.status(500).json({ message: 'Gagal mengambil data user' });
   }
-});**/
+});
 router.post('/login', async (req, res) => {
   const { username, pass } = req.body;
   try {
@@ -33,14 +56,23 @@ router.post('/login', async (req, res) => {
     if (!isPasswordValid) {
       return res.status(401).json({ message: 'Password salah' });
     }
+
+    const payload = {
+      userId: user.id,
+      isAdmin: user.isAdmin,
+    };
+
+    const token = jwt.sign(payload, JWT_SECRET, { expiresIn: '1h' }); // Set appropriate expiration time
     const userWithoutPassword = Object.assign({}, user.toJSON());
-    delete userWithoutPassword.pass
-    res.json({ message: 'Login Berhasil', user: userWithoutPassword });
+    delete userWithoutPassword.pass;
+
+    res.json({ message: 'Login Berhasil', token, user: userWithoutPassword });
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: 'Gagal login' });
   }
 });
+
 router.post('/register', async (req, res) => {
   const { nama_lengkap, username, pass} = req.body;
   const hashedPass = await bcrypt.hash(pass, 10);
@@ -108,6 +140,7 @@ router.put('/:UUID/nama_lengkap', async (req, res) => {
       res.status(500).json({ message: 'Gagal mengubah username' });
     }
   });
+  
 router.delete('/:UUID', async (req, res) => {
     const { UUID } = req.params;
   
