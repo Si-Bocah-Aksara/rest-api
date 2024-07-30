@@ -7,7 +7,6 @@ const uuid = require('uuid');//bikin UUID
 const jwt = require('jsonwebtoken');
 
 router.use(bodyParser.json());
-
 //token generator
 const JWT_SECRET = process.env.JWT_SECRET;
 //Cek admin
@@ -45,8 +44,6 @@ router.get('/', verifyToken, isAdmin, async (req, res) => {
     res.status(500).json({ message: 'Gagal mengambil data user' });
   }
 });
-
-// Login (menghasilkan token)
 router.post('/login', async (req, res) => {
   const { username, pass } = req.body;
   try {
